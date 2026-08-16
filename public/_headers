@@ -1,0 +1,24 @@
+# Security headers for Cloudflare Pages (picked up automatically at deploy).
+# Netlify uses the same file format. For other hosts, replicate these in
+# your server/edge config. The CSP here is authoritative; the <meta> CSP in
+# each HTML file is a fallback for hosts that ignore this file.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+# Data refreshes on a schedule — cache briefly, always revalidate.
+/data/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+# The vendored chart library is pinned — cache forever.
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=3600, must-revalidate

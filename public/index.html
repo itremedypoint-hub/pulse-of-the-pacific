@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>The Pulse of the Pacific — A Living El Niño / ENSO Tracker</title>
+<meta name="description" content="A live, self-updating instrument for tracking El Niño and La Niña: the breathing ocean, the full ONI record since 1950, global impacts, and an honest statistical forecast built on NOAA data."/>
+<meta name="theme-color" content="#05080f"/>
+<meta property="og:title" content="The Pulse of the Pacific — Living El Niño Tracker"/>
+<meta property="og:description" content="Live ENSO status, 75 years of ocean memory, global impacts, and an honest forecast — auto-updated from NOAA."/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%2305080f'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%233dd6c4'/%3E%3C/svg%3E"/>
+<!-- Content-Security-Policy (meta fallback; the _headers file is authoritative on Cloudflare Pages).
+     script-src 'self' only — there are NO inline scripts anywhere in this site. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script defer src="vendor/echarts.min.js"></script>
+<script defer src="assets/app.js"></script>
+<body>
+<noscript><div style="padding:24px;font-family:system-ui;background:#0c1a2e;color:#e8edf4;border-bottom:1px solid #162a44">
+This tracker needs JavaScript to draw its live charts. The underlying data is public:
+<a href="https://www.cpc.ncep.noaa.gov/data/indices/" style="color:#3dd6c4">NOAA CPC ENSO indices</a>.
+</div></noscript>
+<a class="skip" href="#timeline">Skip to content</a>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>Pulse of the Pacific</div>
+    <nav class="topnav">
+      <a href="#timeline">Timeline</a>
+      <a href="#impacts">Global Impacts</a>
+      <a href="#forecast">Forecast</a>
+      <a href="#mechanism">How It Works</a>
+      <a href="#data">Data &amp; Methods</a>
+    </nav>
+    <div class="livechip"><span class="led"></span><span id="liveClock">LIVE</span></div>
+  </div>
+</div>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <canvas id="oceanCanvas"></canvas>
+  <div class="hero-veil"></div>
+  <div class="wrap">
+    <div class="eyebrow">Equatorial Pacific · Real-time ENSO instrument</div>
+    <h1>The ocean is <span class="em" id="heroPhase">breathing</span>.</h1>
+    <p class="sub">El Niño and La Niña are the warm and cool beats of a single planetary oscillation — the largest driver of year-to-year climate on Earth. This is its live pulse, its century-long memory, and an honest look at what comes next.</p>
+
+    <div class="statusgrid" id="statusGrid" role="group" aria-label="Current ENSO status">
+      <div class="statuscell">
+        <div class="k"><span class="led" style="width:6px;height:6px;border-radius:50%;background:var(--live);display:inline-block"></span>Current phase</div>
+        <div class="v"><span class="phase-pill" id="phasePill"><span class="orb"></span><span id="phaseTxt">—</span></span></div>
+        <div class="vsub" id="phaseSub">reading latest data…</div>
+      </div>
+      <div class="statuscell">
+        <div class="k" id="pulseLabel">Latest ONI</div>
+        <div class="v" id="oniVal">—</div>
+        <div class="vsub" id="oniSeason">°C · Niño 3.4</div>
+      </div>
+      <div class="statuscell">
+        <div class="k">Alert status</div>
+        <div class="v" style="font-size:clamp(18px,2.3vw,26px)" id="alertVal">El Niño Advisory</div>
+        <div class="vsub" id="alertSub">NOAA CPC · Jun 2026</div>
+      </div>
+      <div class="statuscell">
+        <div class="k">Trend (12 mo)</div>
+        <div class="v" id="trendVal">—</div>
+        <div class="vsub" id="trendSub">change in ONI</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ TIMELINE ============ -->
+<section class="band" id="timeline">
+  <div class="wrap">
+    <div class="band-head fade">
+      <div class="label">The century-long memory</div>
+      <h2>Every El Niño and La Niña since 1950</h2>
+      <p>The Oceanic Niño Index is the official heartbeat trace of ENSO: a three-month running average of sea-surface temperature in the central Pacific. Red beats are El Niño; blue beats are La Niña. Drag to explore seven decades of the ocean's pulse.</p>
+    </div>
+    <div class="card card-pad fade">
+      <div class="controls">
+        <div class="seg" id="rangeSeg" role="group" aria-label="Time range">
+          <button data-range="all" aria-pressed="true">1950–now</button>
+          <button data-range="40">Last 40 yrs</button>
+          <button data-range="20">Last 20 yrs</button>
+          <button data-range="8">Last 8 yrs</button>
+        </div>
+        <div class="seg" id="idxSeg" role="group" aria-label="Index">
+          <button data-idx="oni" aria-pressed="true">ONI</button>
+          <button data-idx="roni" aria-pressed="false">+ RONI</button>
+        </div>
+        <div class="spacer"></div>
+        <div class="legend-inline">
+          <span><i style="background:#e85d3d"></i>El Niño</span>
+          <span><i style="background:#2b6fb3"></i>La Niña</span>
+          <span><i style="background:#3a5572"></i>Neutral</span>
+        </div>
+      </div>
+      <div id="oniChart" role="img" aria-label="Bar chart of the Oceanic Niño Index from 1950 to present. Red bars are El Niño events, blue bars are La Niña."></div>
+      <div id="roniNote" style="display:none; margin-top:12px; font-family:var(--mono); font-size:11px; color:#8a7a5a; border-left:2px solid rgba(255,179,71,.4); padding-left:10px; line-height:1.5"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ IMPACTS ============ -->
+<section class="band" id="impacts">
+  <div class="wrap">
+    <div class="band-head fade">
+      <div class="label">Teleconnections</div>
+      <h2>One ocean, a rearranged world</h2>
+      <p>A warm tongue of water on the equator shifts the planet's rainfall, droughts, and storms tens of thousands of kilometers away. These are the canonical winter tendencies of a strong El Niño — probabilities, not certainties. Tap a region.</p>
+    </div>
+    <div class="maplayout fade">
+      <div class="mapbox">
+        <svg id="impactSvg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="World map of El Niño impacts"></svg>
+      </div>
+      <div class="impact-detail">
+        <div class="pick">▶ Selected region</div>
+        <div class="impact-card" id="impactCard">
+          <h3 id="icName">Coastal Peru &amp; Ecuador</h3>
+          <span class="eff" id="icEff">Flooding</span>
+          <p id="icTxt"></p>
+        </div>
+        <div class="legend-row">
+          <span><b style="background:#3aa0ff"></b>Wetter / flood risk</span>
+          <span><b style="background:#e8843d"></b>Drier / drought risk</span>
+          <span><b style="background:#9b7fd4"></b>Storm-track shift</span>
+          <span><b style="background:#5fc9b0"></b>Suppressed storms</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ FORECAST ============ -->
+<section class="band" id="forecast">
+  <div class="wrap">
+    <div class="band-head fade">
+      <div class="label">What comes next</div>
+      <h2>An honest forecast</h2>
+      <p>This module projects the index forward with a transparent statistical method — damped persistence, the standard scientific benchmark — and widens its uncertainty across the notorious spring predictability barrier. For official outlooks, it defers to NOAA/IRI and the Bureau of Meteorology.</p>
+    </div>
+    <div class="fc-layout fade">
+      <div class="card card-pad">
+        <div class="controls">
+          <div class="seg" id="fcSeg" role="group" aria-label="Forecast model">
+            <button data-fc="damped" aria-pressed="true">Damped persistence</button>
+            <button data-fc="persist" aria-pressed="false">Pure persistence</button>
+            <button data-fc="climo" aria-pressed="false">Climatology</button>
+          </div>
+          <div class="spacer"></div>
+          <div class="legend-inline"><span><i style="background:#3dd6c4"></i>Projection</span><span><i style="background:rgba(61,214,196,.22)"></i>Uncertainty</span></div>
+        </div>
+        <div id="fcChart" role="img" aria-label="Line chart of recent observed ONI values with a statistical projection and uncertainty band extending nine months ahead."></div>
+      </div>
+      <div class="prob-wrap">
+        <div class="card card-pad" style="display:flex;flex-direction:column;gap:18px">
+          <div style="font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--tide)">Phase probability · next month</div>
+          <div class="prob">
+            <div class="top"><span style="color:#ff7a5c">El Niño</span><span id="pEl">—</span></div>
+            <div class="bar"><div class="fill" id="fEl" style="background:linear-gradient(90deg,#e85d3d,#ffb347);width:0"></div></div>
+          </div>
+          <div class="prob">
+            <div class="top"><span style="color:#7d96b3">Neutral</span><span id="pNe">—</span></div>
+            <div class="bar"><div class="fill" id="fNe" style="background:linear-gradient(90deg,#3a5572,#5b7a9a);width:0"></div></div>
+          </div>
+          <div class="prob">
+            <div class="top"><span style="color:#4d9fe0">La Niña</span><span id="pLa">—</span></div>
+            <div class="bar"><div class="fill" id="fLa" style="background:linear-gradient(90deg,#1d4e85,#2b6fb3);width:0"></div></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10.5px;color:var(--tide);line-height:1.5">Derived from the projected index and historical transition statistics. Indicative only.</div>
+        </div>
+      </div>
+    </div>
+    <div class="disclaimer fade">
+      <b>Read this before you trust a number.</b> &nbsp;ENSO shifts the <em>odds</em> of weather; it does not determine it. Statistical projections shown here are illustrative and lose skill sharply when they cross boreal spring (March–May) — the spring predictability barrier. Operational forecasts from coupled climate models are more skillful. Always consult NOAA Climate Prediction Center, IRI, and your national meteorological service for decisions.
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ MECHANISM ============ -->
+<section class="band" id="mechanism">
+  <div class="wrap">
+    <div class="band-head fade">
+      <div class="label">The physics, briefly</div>
+      <h2>How the Pacific switches state</h2>
+      <p>ENSO is a coupled instability of ocean and atmosphere. Three ideas explain almost everything you see above.</p>
+    </div>
+    <div class="mech-grid">
+      <div class="mech fade">
+        <div class="ph">01 · The baseline</div>
+        <h3>Trade winds stack the deck</h3>
+        <p>Normally, easterly trade winds drag warm surface water westward, piling it into the Indo-Pacific Warm Pool. Cold, nutrient-rich water wells up off South America. The atmosphere's Walker circulation rises in the west, sinks in the east.</p>
+        <div class="ribbon" style="background:linear-gradient(90deg,#2b6fb3,#1d4e85)"></div>
+      </div>
+      <div class="mech fade">
+        <div class="ph">02 · El Niño</div>
+        <h3>The Bjerknes feedback runs away</h3>
+        <p>A burst of westerly wind weakens the trades. Warm water slides east as a Kelvin wave, deepening the thermocline and shutting off upwelling. Warmer water weakens the winds further — a self-amplifying loop that locks in the warm phase.</p>
+        <div class="ribbon" style="background:linear-gradient(90deg,#e85d3d,#ffb347)"></div>
+      </div>
+      <div class="mech fade">
+        <div class="ph">03 · The turnaround</div>
+        <h3>The ocean discharges its heat</h3>
+        <p>El Niño drains warm water poleward, depleting the equatorial heat reservoir. Reflected Rossby and Kelvin waves return to flip the sign. Depleted, the system swings toward La Niña — which is why the pulse oscillates every 2–7 years.</p>
+        <div class="ribbon" style="background:linear-gradient(90deg,#3dd6c4,#1f8478)"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ DATA / METHODS ============ -->
+<section class="band" id="data">
+  <div class="wrap">
+    <div class="band-head fade">
+      <div class="label">Data &amp; methods</div>
+      <h2>Where this comes from</h2>
+      <p>Built on open, authoritative climate data. When deployed with the included data pipeline, the leading edge of every series refreshes automatically on each source's natural cadence.</p>
+    </div>
+    <div class="srcgrid fade">
+      <div class="src"><div class="nm">NOAA CPC — ONI &amp; RONI</div><div class="ds">Official Oceanic Niño Index and the new Relative ONI (operational since Feb 2026). Monthly.</div><a class="lk" href="https://www.cpc.ncep.noaa.gov/data/indices/" target="_blank" rel="noopener">cpc.ncep.noaa.gov/data/indices</a></div>
+      <div class="src"><div class="nm">NOAA OISST v2.1</div><div class="ds">Daily 0.25° sea-surface temperature and anomalies — the field rendered in the hero.</div><a class="lk" href="https://www.ncei.noaa.gov/products/optimum-interpolation-sst" target="_blank" rel="noopener">ncei.noaa.gov · OISST</a></div>
+      <div class="src"><div class="nm">IRI / CPC ENSO Plume</div><div class="ds">The multi-model probabilistic forecast this site defers to for official outlooks.</div><a class="lk" href="https://iri.columbia.edu/our-expertise/climate/forecasts/enso/current/" target="_blank" rel="noopener">iri.columbia.edu · ENSO</a></div>
+      <div class="src"><div class="nm">Bureau of Meteorology</div><div class="ds">Australia's ENSO Outlook and Southern Oscillation Index for an independent read.</div><a class="lk" href="http://www.bom.gov.au/climate/enso/" target="_blank" rel="noopener">bom.gov.au · ENSO</a></div>
+      <div class="src"><div class="nm">PMEL TAO/TRITON &amp; Argo</div><div class="ds">Equatorial moored buoys and profiling floats — subsurface heat content and winds. Via ERDDAP.</div><a class="lk" href="https://www.pmel.noaa.gov/tao/" target="_blank" rel="noopener">pmel.noaa.gov · TAO</a></div>
+      <div class="src"><div class="nm">Copernicus C3S — SEAS5</div><div class="ds">ECMWF seasonal forecast system for the Niño 3.4 plume. Via the Climate Data Store.</div><a class="lk" href="https://climate.copernicus.eu/seasonal-forecasts" target="_blank" rel="noopener">climate.copernicus.eu</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="frow">
+      <div style="max-width:48ch"><b>Pulse of the Pacific</b> — an independent, educational ENSO instrument. Not an official forecast product. Built on public NOAA, IRI, BoM, and Copernicus data.</div>
+      <div class="tag" id="buildStamp">—</div>
+    </div>
+    <div class="frow" style="border-top:1px solid var(--line-soft);padding-top:18px">
+      <div class="tag">ENSO = El Niño–Southern Oscillation · ONI threshold ±0.5 °C over 5 overlapping seasons · Niño 3.4 = 5°N–5°S, 170°W–120°W</div>
+      <div class="tag">For decisions, consult NOAA CPC · IRI · your national met service · <a href="admin.html" style="color:var(--live);text-decoration:none">System status</a></div>
+    </div>
+  </div>
+</footer>
+
+<div class="tip" id="tooltip"></div>
+
+</body>
+</html>
