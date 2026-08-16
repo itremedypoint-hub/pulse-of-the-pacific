@@ -1,0 +1,56 @@
+name: Refresh ENSO data
+
+# ---------------------------------------------------------------------------
+# The scheduled backend. Each run:
+#   1. runs the parser test-suite (a red test BLOCKS any data commit),
+#   2. fetches + validates the latest NOAA indices (scripts/update_data.py),
+#   3. commits refreshed JSON + status.json only if something changed.
+# The host (Cloudflare Pages / Vercel / Netlify) redeploys on that commit.
+#
+# Cadence: weekly Nino-3.4 lands Mondays; monthly indices land ~1st-5th.
+# Mon + Thu at 16:10 UTC catches everything with a safety margin.
+# ---------------------------------------------------------------------------
+
+on:
+  schedule:
+    - cron: "10 16 * * 1"
+    - cron: "10 16 * * 4"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-enso-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run parser & validation tests (gates the refresh)
+        run: python tests/test_parsers.py
+
+      - name: Fetch, validate, and rebuild data JSON + status telemetry
+        run: python scripts/update_data.py
+
+      - name: Commit refreshed data (only if changed)
+        run: |
+          git config user.name  "enso-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if [ -n "$(git status --porcelain public/data)" ]; then
+            git add public/data
+            git commit -m "data: scheduled ENSO refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+            echo "Committed updated data."
+          else
+            echo "No data changes — nothing to commit."
+          fi
