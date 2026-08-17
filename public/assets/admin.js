@@ -137,7 +137,8 @@ function renderIntegrity(oni){
           : "An event shorter than 5 seasons is labelled — classifier or data problem."));
   // 5. freshness of the record itself
   const last = recs[recs.length-1];
-  const ageDays = last ? (Date.now() - Date.UTC(Math.floor(last.t), Math.round((last.t%1)*12), 1))/86400000 : Infinity;
+   const ageDays = last ? (Date.now() - Date.UTC(last.y, last.m - 1, 1))/86400000 : Infinity;
+  //const ageDays = last ? (Date.now() - Date.UTC(Math.floor(last.t), Math.round((last.t%1)*12), 1))/86400000 : Infinity;
   grid.appendChild(integrityCard("Series freshness", ageDays < 75,
     last ? `Latest season on disk: ${last.s} ${last.y} (${last.v>0?"+":""}${last.v}). `
            + (ageDays<75 ? "Within the expected monthly publication window."
