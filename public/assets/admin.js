@@ -139,10 +139,10 @@ function renderIntegrity(oni){
   const last = recs[recs.length-1];
    const ageDays = last ? (Date.now() - Date.UTC(last.y, last.m - 1, 1))/86400000 : Infinity;
   //const ageDays = last ? (Date.now() - Date.UTC(Math.floor(last.t), Math.round((last.t%1)*12), 1))/86400000 : Infinity;
-  grid.appendChild(integrityCard("Series freshness", ageDays < 75,
+    grid.appendChild(integrityCard("Series freshness", ageDays < 100,
     last ? `Latest season on disk: ${last.s} ${last.y} (${last.v>0?"+":""}${last.v}). `
-           + (ageDays<75 ? "Within the expected monthly publication window."
-                         : "Older than ~2.5 months — check pipeline runs.")
+           + (ageDays<100 ? "Within the expected monthly publication window."
+                         : "Older than ~3.3 months — check pipeline runs.")
          : "No records found."));
 }
 
